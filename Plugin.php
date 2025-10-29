@@ -6,7 +6,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * 
  * @package HideContent
  * @author 笨蛋五十
- * @version 1.0.0
+ * @version 1.0.1
  * @link https://github.com/wanxi50
  */
 class HideContent_Plugin implements Typecho_Plugin_Interface
