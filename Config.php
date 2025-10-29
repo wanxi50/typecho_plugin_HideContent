@@ -40,12 +40,13 @@ class HideContent_Config
         <ul>
         <li>支持 AJAX 异步验证，提交评论/密码后，自动显示隐藏内容，无需刷新页面</li>
         <li>管理员和文章作者可直接查看所有隐藏内容</li>
-        <li>使用<details>标签，兼容标准 Markdown 语法，无缝迁移文章</li>
+        <li>使用&lt;details&gt;标签，兼容标准 Markdown 语法，无缝迁移文章</li>
         <li>精美的现代化样式，支持完全自定义替换css样式</li>
         </ul>
         
         <h2>设置</h2>
         <ul>
+        <li>禁用插件后重新启用即可恢复默认样式。</li>
         <li><strong>启用隐藏功能：</strong>启用后，访客需要评论/输入密码后才能查看隐藏内容。关闭后不再隐藏任何内容，直接展示给所有访客</li>
         <li><strong>管理员/作者直接查看隐藏内容：</strong>启用后，管理员和文章作者无需验证即可查看隐藏内容。禁用后将与普通访客一致，需要评论/输入密码。</li>
         <li><strong>评论后可见提示：</strong>设置访客未评论时显示的提示文字</li>
@@ -142,29 +143,7 @@ class HideContent_Config
             _t('可以自定义隐藏内容的CSS样式，留空则使用默认样式')
         );
         $form->addInput($customStyle);
-    
-        // 添加恢复默认样式按钮
-        echo '<div style="margin-top: 15px;">
-            <button type="button" id="restore-default-css" class="btn btn-s">恢复默认样式</button>
-        </div>';
-        
-        // 添加JavaScript处理恢复按钮
-        echo '<script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const restoreBtn = document.getElementById("restore-default-css");
-            const cssTextarea = document.querySelector("textarea[name=\'customStyle\']");
-            
-            if (restoreBtn && cssTextarea) {
-                const defaultCSS = ' . json_encode(HideContent_Plugin::getDefaultStyle()) . ';
-                restoreBtn.addEventListener("click", function() {
-                    if (confirm("确定要恢复为默认样式吗？当前自定义样式将被覆盖。")) {
-                        cssTextarea.value = defaultCSS;
-                        alert("已恢复默认样式，请点击"保存设置"按钮保存更改。");
-                    }
-                });
-            }
-        });
-        </script>';
+        // 用户选择：不再提供“恢复默认样式”按钮。禁用插件并重新启用即可恢复默认样式。
     }
 }
 
