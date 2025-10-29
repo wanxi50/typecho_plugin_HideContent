@@ -1,0 +1,25 @@
+{
+  "name": "typecho-hidecontent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Build scripts for HideContent Typecho plugin",
+  "type": "module",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "npm run clean && node scripts/build.mjs all",
+    "build:js": "node scripts/build.mjs js",
+    "build:css": "node scripts/build.mjs css",
+    "zip": "node scripts/build.mjs zip",
+    "release": "npm run build && npm run zip"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "bestzip": "^2.2.1",
+    "cssnano": "^6.1.2",
+    "esbuild": "^0.21.5",
+    "postcss": "^8.4.47",
+    "rimraf": "^5.0.5"
+  }
+}
+
+

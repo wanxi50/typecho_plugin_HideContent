@@ -1,0 +1,298 @@
+/* ========== HideContent 插件样式 ========== */
+
+/* === 1. 基础重置 === */
+div[hide-content] *,
+div[hide-content] *::before,
+div[hide-content] *::after {
+  box-sizing: border-box !important;
+}
+
+
+/* === 2. 隐藏内容容器 === */
+div[hide-content] {
+  display: block !important;
+  margin: 16px 0 !important;
+  padding: 0 !important;
+}
+
+/* === 3. 锁定状态容器（密码锁 & 评论锁） === */
+div[hide-content] .hc-lock-container {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  width: 100% !important;
+  padding: 0.75rem 1rem !important;
+  background-color: rgb(243 244 246) !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 1rem 1rem 1rem 1rem !important;
+  transition: all 0.3s ease !important;
+  min-height: 72px !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* === 4. 锁图标 === */
+div[hide-content] .hc-lock-icon {
+  width: 20px !important;
+  height: 20px !important;
+  border: 2px solid #888 !important;
+  border-radius: 4px !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+}
+
+div[hide-content] .hc-lock-icon::before {
+  content: "" !important;
+  position: absolute !important;
+  width: 10px !important;
+  height: 8px !important;
+  border: 2px solid #888 !important;
+  border-bottom: none !important;
+  border-radius: 6px 6px 0 0 !important;
+  top: -8px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+/* === 5. 锁定提示文字 === */
+div[hide-content] .hc-lock-text {
+  flex: 1 !important;
+  color: #666 !important;
+  font-size: 15px !important;
+  font-weight: 400 !important;
+}
+
+/* === 6. 密码输入区域 === */
+div[hide-content] .hc-input-wrapper {
+  display: flex !important;
+  gap: 8px !important;
+  flex: 2 !important;
+}
+
+div[hide-content] .hc-password-input {
+  flex: 1 !important;
+  padding: 8px 12px !important;
+  border: 1px solid #d0d0d0 !important;
+  border-radius: 4px !important;
+  font-size: 14px !important;
+  outline: none !important;
+  transition: all 0.3s ease !important;
+  background: #fff !important;
+}
+
+div[hide-content] .hc-password-input:focus {
+  border-color: #888 !important;
+  box-shadow: 0 0 0 2px rgba(136, 136, 136, 0.1) !important;
+}
+
+div[hide-content] .hc-submit-btn {
+  padding: 8px 20px !important;
+  background: #666 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  transition: all 0.3s ease !important;
+  white-space: nowrap !important;
+}
+
+div[hide-content] .hc-submit-btn:hover {
+  background: #555 !important;
+}
+
+div[hide-content] .hc-submit-btn:active {
+  transform: scale(0.98) !important;
+}
+
+div[hide-content] .hc-submit-btn:disabled {
+  background: #999 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* === 7. 评论提示区域 === */
+div[hide-content] .hc-comment-hint {
+  flex: 2 !important;
+  color: #999 !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  text-align: right !important;
+}
+
+div[hide-content] .hc-comment-lock {
+  cursor: default !important;
+}
+
+/* === 8. 错误提示样式 === */
+div[hide-content] .hc-error {
+  display: block !important;
+  margin: 8px 0 0 36px !important;
+  color: #dc3545 !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+}
+
+/* === 9. 已解密内容容器（统一类名，超高优先级） === */
+.hc-content.hc-content,
+div[hide-content] .hc-content,
+div[hide-content="comment"] .hc-content,
+div[hide-content="password"] .hc-content {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0.75rem 1rem !important;
+  background: rgb(243 244 246) !important;
+  background-color: rgb(243 244 246) !important;
+  border: 1px solid #e5e7eb !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-color: #e5e7eb !important;
+  border-radius: 1rem !important;
+  color: rgb(63 63 70) !important;
+  line-height: 1.8 !important;
+  font-size: 14px !important;
+  letter-spacing: 0.05em !important;
+  min-height: 20px !important;
+  pointer-events: auto !important;
+  user-select: text !important;
+  box-sizing: border-box !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* === 10. 解密内容内部元素样式 === */
+div[hide-content] .hc-content p {
+  margin: 1em 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  line-height: inherit !important;
+  font-weight: 400 !important;
+}
+
+div[hide-content] .hc-content p:first-child {
+  margin-top: 0 !important;
+}
+
+div[hide-content] .hc-content p:last-child {
+  margin-bottom: 0 !important;
+}
+
+div[hide-content] .hc-content a {
+  color: #3b82f6 !important;
+  text-decoration: underline !important;
+  text-decoration-color: #93c5fd !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+div[hide-content] .hc-content a:hover {
+  color: #2563eb !important;
+  text-decoration-color: #60a5fa !important;
+}
+
+div[hide-content] .hc-content strong,
+div[hide-content] .hc-content b {
+  font-weight: 600 !important;
+}
+
+div[hide-content] .hc-content em,
+div[hide-content] .hc-content i {
+  font-style: italic !important;
+}
+
+div[hide-content] .hc-content code {
+  padding: 2px 6px !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  border-radius: 3px !important;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+  font-size: 0.9em !important;
+}
+
+div[hide-content] .hc-content ul,
+div[hide-content] .hc-content ol {
+  margin: 0.5em 0 !important;
+  padding-left: 2em !important;
+}
+
+div[hide-content] .hc-content li {
+  margin: 0.3em 0 !important;
+}
+
+/* === 11. 响应式设计（移动端优化） === */
+@media (max-width: 768px) {
+  div[hide-content] .hc-lock-container {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    text-align: center !important;
+  }
+
+  div[hide-content] .hc-lock-icon {
+    margin-bottom: 4px !important;
+  }
+
+  div[hide-content] .hc-lock-text {
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  div[hide-content] .hc-input-wrapper {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  div[hide-content] .hc-password-input,
+  div[hide-content] .hc-submit-btn {
+    width: 100% !important;
+  }
+
+  div[hide-content] .hc-comment-hint {
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  div[hide-content] .hc-error {
+    margin-left: 0 !important;
+    text-align: center !important;
+  }
+}
+
+/* === 12. 极窄屏幕优化（< 480px） === */
+@media (max-width: 480px) {
+  div[hide-content] .hc-lock-container {
+    padding: 1rem 0.75rem !important;
+    gap: 10px !important;
+  }
+
+  div[hide-content] .hc-lock-text {
+    font-size: 14px !important;
+  }
+
+  div[hide-content] .hc-comment-hint {
+    font-size: 13px !important;
+  }
+
+  div[hide-content] .hc-password-input {
+    font-size: 16px !important;
+  }
+
+  div[hide-content] .hc-submit-btn {
+    padding: 10px 20px !important;
+    font-size: 15px !important;
+  }
+}
+
+/* === 13. 打印样式优化 === */
+@media print {
+  div[hide-content] .hc-lock-container {
+    display: none !important;
+  }
+
+  div[hide-content] .hc-content {
+    display: block !important;
+    border: 1px solid #ccc !important;
+    background-color: #fff !important;
+  }
+}
