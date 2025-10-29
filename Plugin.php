@@ -145,28 +145,33 @@ public static function config(Typecho_Widget_Helper_Form $form)
         
         // 配置：管理员/作者直通
         $privilegedBypass = isset($options->privilegedBypass) ? (string)$options->privilegedBypass : '1';
-        if ($privilegedBypass === '1') {
-        if ($isAdmin || $isAuthor) {
-            return self::showDecryptedForPrivileged($text);
-            }
-        }
+        $isPrivileged = ($privilegedBypass === '1' && ($isAdmin || $isAuthor));
 
         // 使用会话内稳定映射为每个隐藏块生成稳定的 block_id
         
         // 匹配所有 <details hide-content> 标签
         $text = preg_replace_callback(
             '/<details([^>]*hide-content="(comment|password)"[^>]*)>(.*?)<\/details>/is',
-            function($matches) use ($widget, $options) {
+            function($matches) use ($widget, $options, $isPrivileged) {
                 $attributes = $matches[1];
                 $encryptType = $matches[2];
                 $content = $matches[3];
 
+                // 清理因 Markdown 换行产生的前后 <br> 或空 <p>
+                $cleanContent = self::cleanInnerContent($content);
+
                 $blockId = self::getStableBlockId($widget->cid, $encryptType, $attributes, $content);
                 
+                // 优先处理特权用户
+                if ($isPrivileged) {
+                    $newAttributes = self::upsertAttribute($attributes, 'data-decrypted', 'true');
+                    return '<details' . $newAttributes . ' open>' . $cleanContent . '</details>';
+                }
+                
                 if ($encryptType === 'comment') {
-                    return self::processCommentEncrypt($attributes, $content, $widget, $options, $blockId);
+                    return self::processCommentEncrypt($attributes, $cleanContent, $widget, $options, $blockId);
                 } elseif ($encryptType === 'password') {
-                    return self::processPasswordEncrypt($attributes, $content, $widget, $options, $blockId);
+                    return self::processPasswordEncrypt($attributes, $cleanContent, $widget, $options, $blockId);
                 }
                 
                 return $matches[0];
@@ -175,6 +180,31 @@ public static function config(Typecho_Widget_Helper_Form $form)
         );
         
         return $text;
+    }
+    
+    /**
+     * 清理内容中由 Markdown 换行导致的多余首尾 <br>
+     */
+    private static function cleanInnerContent($html)
+    {
+        $content = trim($html);
+
+        if ($content === '') {
+            return '';
+        }
+
+        // 移除开头至多一个由 Markdown 产生的空行占位（空 <p> 或 <br>）
+        $content = preg_replace('/^\s*(?:<p>\s*(?:<br\s*\/?\s*)*\s*<\/p>|<br\s*\/?\s*)/i', '', $content, 1);
+        // 移除结尾至多一个空行占位
+        $content = preg_replace('/(?:<p>\s*(?:<br\s*\/?\s*)*\s*<\/p>|<br\s*\/?\s*)\s*$/i', '', $content, 1);
+
+        // 某些编辑器在行首输入 '>' 会被 Markdown 转义为 &gt;，
+        // 若它出现在内容最前面，会渲染为多余的提示符，这里容错性移除一次
+        $content = preg_replace('/^(?:&gt;|>)\s*/i', '', $content, 1);
+        // 同样处理包裹在首段 <p> 中的情形：<p>&gt; 文本 ...</p>
+        $content = preg_replace('/^(\s*<p\b[^>]*>)\s*(?:&gt;|>)\s*/i', '$1', $content, 1);
+
+        return trim($content);
     }
     
     /**
@@ -196,13 +226,10 @@ public static function config(Typecho_Widget_Helper_Form $form)
     /**
      * 处理评论后可见的隐藏内容
      */
-    private static function processCommentEncrypt($attributes, $content, $widget, $options, $blockId)
+    private static function processCommentEncrypt($attributes, $cleanContent, $widget, $options, $blockId)
     {
         // 检查用户是否已评论
         $isCommented = self::checkCommented($widget->cid);
-        
-        // 清理内容：去除首尾换行和空白
-        $cleanContent = trim($content);
         
         // 添加 block_id 属性
         $newAttributes = self::upsertAttribute($attributes, 'data-block-id', $blockId);
@@ -220,11 +247,8 @@ public static function config(Typecho_Widget_Helper_Form $form)
     /**
      * 处理密码可见的隐藏内容
      */
-    private static function processPasswordEncrypt($attributes, $content, $widget, $options, $blockId)
+    private static function processPasswordEncrypt($attributes, $cleanContent, $widget, $options, $blockId)
     {
-        // 清理内容：去除首尾换行和空白
-        $cleanContent = trim($content);
-        
         // 提取密码（仅用于密钥派生，不输出到前端）
         $correctPassword = '';
         if (preg_match('/data-key="([^"]+)"/i', $attributes, $keyMatch)) {

@@ -228,15 +228,18 @@ class HideContent_Action extends Typecho_Widget implements Widget_Interface_Do
         // 先解码HTML实体
         $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         
-        // 移除details标签，只保留内部内容
-        $html = preg_replace('/<details[^>]*>/i', '', $html);
-        $html = preg_replace('/<\/details>/i', '', $html);
+        // 移除details标签，只保留内部内容（兼容相邻的单个换行）
+        // 开标签：吃掉紧随其后的 1 个换行（<br> 或 <p><br></p>）
+        $html = preg_replace('/<details[^>]*>\s*(?:<p>\s*<br\s*\/?\s*>\s*<\/p>|<br\s*\/?\s*|)/i', '', $html);
+        // 闭标签：吃掉紧邻其前的 1 个换行
+        $html = preg_replace('/(?:\s*(?:<p>\s*<br\s*\/?\s*>\s*<\/p>|<br\s*\/?\s*|))?<\/details>/i', '', $html);
         
-        // 清理多余的空标签和换行
-        $html = preg_replace('/<p>\s*<\/p>/i', '', $html); // 移除空的 <p> 标签
-        $html = preg_replace('/<br>\s*<br>/i', '<br>', $html); // 移除连续的 <br>
-        $html = preg_replace('/^\s*<br>\s*/i', '', $html); // 移除开头的 <br>
-        $html = preg_replace('/\s*<br>\s*$/i', '', $html); // 移除结尾的 <br>
+        // 清理空的段落（保留其他换行，避免过度处理）
+        $html = preg_replace('/<p>\s*<\/p>/i', '', $html);
+
+        // 容错：如果内容开头是被转义或直接的 '>'，去掉一次；<p>&gt; ...</p> 也处理
+        $html = preg_replace('/^(?:&gt;|>)\s*/i', '', $html, 1);
+        $html = preg_replace('/^(\s*<p\b[^>]*>)\s*(?:&gt;|>)\s*/i', '$1', $html, 1);
 
         return trim($html);
     }

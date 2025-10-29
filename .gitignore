@@ -36,3 +36,6 @@ Desktop.ini
 .esbuild/
 coverage/
 *.map
+
+assets/*.min.js
+assets/*.min.css

@@ -65,7 +65,23 @@ HideContent/
 ├── LICENSE              # 开源许可证（GPL-3.0）
 └── README.md            # 使用说明
 ```
+ 
+ 
+## 构建与发布
 
+本项目使用 Node.js 构建前端资源
+
+1) 安装依赖
+
+```bash
+npm ci
+```
+
+3) 构建并打包
+
+```bash
+npm run release
+```
 
 
 ## 配置选项

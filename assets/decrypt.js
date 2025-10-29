@@ -70,6 +70,8 @@
         autoDecryptOnLoad();
     }
 
+    // 不再在前端做清理，统一交由后端处理，前端仅赋值
+
     
     // 处理所有隐藏内容块
     function processEncryptedBlocks() {
@@ -114,7 +116,7 @@
             
             if (cachedPlain) {
                 // 直接使用缓存明文（仅当前会话）
-                const contentHtml = String(cachedPlain).trim();
+                const contentHtml = String(cachedPlain || '').trim();
                 const replaced = document.createElement('div');
                 replaced.setAttribute('hide-content', encryptType);
                 replaced.setAttribute('data-block-id', blockId);
