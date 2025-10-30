@@ -11,6 +11,8 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  */
 class HideContent_Plugin implements Typecho_Plugin_Interface
 {
+    private static $cssEmitted = false;
+    private static $jsEmitted = false;
     /**
      * 激活插件方法
      */
@@ -22,6 +24,10 @@ class HideContent_Plugin implements Typecho_Plugin_Interface
         // 注册内容解析钩子
         Typecho_Plugin::factory('Widget_Abstract_Contents')->contentEx = array('HideContent_Plugin', 'parse');
         Typecho_Plugin::factory('Widget_Abstract_Contents')->excerptEx = array('HideContent_Plugin', 'parse');
+        
+        // 在页面头部/底部输出资源，避免将样式脚本拼入正文
+        Typecho_Plugin::factory('Widget_Archive')->header = array('HideContent_Plugin', 'renderHeader');
+        Typecho_Plugin::factory('Widget_Archive')->footer = array('HideContent_Plugin', 'renderFooter');
         
         // 注册AJAX Action
         Helper::addAction('hide-content', 'HideContent_Action');
@@ -77,42 +83,6 @@ public static function config(Typecho_Widget_Helper_Form $form)
             // 检查是否包含隐藏内容
             $hasEncryptedContent = preg_match('/<details[^>]+hide-content/i', $text);
             
-            // 只在文章详情页且包含隐藏内容时插入样式，避免在首页摘要中显示CSS代码
-            if ($hasEncryptedContent && $widget->is('single')) {
-                // 样式选择：空则用默认CSS文件；有内容则完全使用自定义样式
-                $pluginUrl = Helper::options()->pluginUrl . '/HideContent';
-                $assetDir = dirname(__FILE__) . '/assets/';
-                $customStyle = isset($options->customStyle) ? trim($options->customStyle) : '';
-                if (empty($customStyle)) {
-                    $cssFile = is_readable($assetDir . 'hide-content.min.css') ? 'hide-content.min.css' : 'hide-content.css';
-                    $text = '<link rel="stylesheet" href="' . $pluginUrl . '/assets/' . $cssFile . '" />' . $text;
-                } else {
-                    $text = '<style>' . $customStyle . '</style>' . $text;
-                }
-
-                // 插入前端脚本配置
-                $actionUrl = Typecho_Common::url('action/hide-content', Helper::options()->index);
-                $commentNotice = isset($options->commentNotice) ? $options->commentNotice : '请发表评论后查看';
-                $passwordNotice = isset($options->passwordNotice) ? $options->passwordNotice : '请输入密码后查看';
-                
-                // 错误提示（HTML）配置
-                $commentErrorHtml = isset($options->commentErrorHtml) ? $options->commentErrorHtml : '<span>请先发表评论后查看</span>';
-                $passwordErrorHtml = isset($options->passwordErrorHtml) ? $options->passwordErrorHtml : '<span>密码错误，请重试</span>';
-                
-                $text .= '<script>window.TypechoHideContent = {' .
-                    'actionUrl: "' . $actionUrl . '", ' .
-                    'cid: ' . $widget->cid . ', ' .
-                    'commentNotice: ' . json_encode($commentNotice) . ', ' .
-                    'passwordNotice: ' . json_encode($passwordNotice) . ', ' .
-                    'commentErrorHtml: ' . json_encode($commentErrorHtml) . ', ' .
-                    'passwordErrorHtml: ' . json_encode($passwordErrorHtml) .
-                '};</script>';
-                
-                // 插入前端脚本（存在即用 .min 回退）
-                $decryptFile = is_readable($assetDir . 'decrypt.min.js') ? 'decrypt.min.js' : 'decrypt.js';
-                $text .= '<script src="' . $pluginUrl . '/assets/' . $decryptFile . '"></script>';
-            }
-            
             // 处理隐藏内容块
             if ($hasEncryptedContent) {
                 $text = self::processEncryptedBlocks($text, $widget, $options);
@@ -120,6 +90,107 @@ public static function config(Typecho_Widget_Helper_Form $form)
         }
 
         return $text;
+    }
+
+    /**
+     * 在页面头部输出样式：若配置 customStyle 非空则使用它替换默认样式，否则加载默认样式文件。
+     * 始终以外链方式提供，避免样式进入正文被引用到评论。
+     */
+    public static function renderHeader()
+    {
+        try {
+            $archive = Typecho_Widget::widget('Widget_Archive');
+        } catch (Exception $e) {
+            return;
+        }
+        if (!$archive->is('single')) {
+            return;
+        }
+        $options = Typecho_Widget::widget('Widget_Options')->plugin('HideContent');
+        $actionUrl = Typecho_Common::url('action/hide-content', Helper::options()->index);
+        $custom = isset($options->customStyle) ? trim($options->customStyle) : '';
+        if ($custom === '') {
+            $pluginUrl = Helper::options()->pluginUrl . '/HideContent';
+            $assetDir = dirname(__FILE__) . '/assets/';
+            $cssFile = is_readable($assetDir . 'hide-content.min.css') ? 'hide-content.min.css' : 'hide-content.css';
+            $ver = @filemtime($assetDir . $cssFile) ?: time();
+            $href = $pluginUrl . '/assets/' . $cssFile . '?v=' . $ver;
+            echo '<link rel="stylesheet" href="' . htmlspecialchars($href, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '" />';
+        } else {
+            $ver = md5($custom);
+            $href = $actionUrl . '?css=1&v=' . $ver;
+            echo '<link rel="stylesheet" href="' . htmlspecialchars($href, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '" />';
+        }
+        self::$cssEmitted = true;
+
+        // 同步在 header 输出运行时配置与脚本，兼容未实现 footer 钩子的主题
+        $commentNotice = isset($options->commentNotice) ? $options->commentNotice : '请发表评论后查看';
+        $passwordNotice = isset($options->passwordNotice) ? $options->passwordNotice : '请输入密码后查看';
+        $commentErrorHtml = isset($options->commentErrorHtml) ? $options->commentErrorHtml : '<span>请先发表评论后查看</span>';
+        $passwordErrorHtml = isset($options->passwordErrorHtml) ? $options->passwordErrorHtml : '<span>密码错误，请重试</span>';
+
+        echo '<script>window.TypechoHideContent = {' .
+            'actionUrl: "' . $actionUrl . '", ' .
+            'cid: ' . intval($archive->cid) . ', ' .
+            'commentNotice: ' . json_encode($commentNotice) . ', ' .
+            'passwordNotice: ' . json_encode($passwordNotice) . ', ' .
+            'commentErrorHtml: ' . json_encode($commentErrorHtml) . ', ' .
+            'passwordErrorHtml: ' . json_encode($passwordErrorHtml) .
+        '};</script>';
+
+        $pluginUrl = Helper::options()->pluginUrl . '/HideContent';
+        $assetDir = dirname(__FILE__) . '/assets/';
+        $decryptFile = is_readable($assetDir . 'decrypt.min.js') ? 'decrypt.min.js' : 'decrypt.js';
+        echo '<script src="' . $pluginUrl . '/assets/' . $decryptFile . '"></script>';
+        self::$jsEmitted = true;
+    }
+
+    /**
+     * 在页面底部输出脚本与运行时配置。
+     */
+    public static function renderFooter()
+    {
+        try {
+            $archive = Typecho_Widget::widget('Widget_Archive');
+        } catch (Exception $e) {
+            return;
+        }
+        if (!$archive->is('single')) {
+            return;
+        }
+        $options = Typecho_Widget::widget('Widget_Options')->plugin('HideContent');
+        $pluginUrl = Helper::options()->pluginUrl . '/HideContent';
+        $assetDir = dirname(__FILE__) . '/assets/';
+        $actionUrl = Typecho_Common::url('action/hide-content', Helper::options()->index);
+
+        // 若主题未调用 header 钩子，则在 footer 兜底输出样式链接
+        if (!self::$cssEmitted) {
+            $custom = isset($options->customStyle) ? trim($options->customStyle) : '';
+            $ver = md5($custom);
+            $href = $actionUrl . '?css=1&v=' . $ver;
+            echo '<link rel="stylesheet" href="' . htmlspecialchars($href, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '" />';
+            self::$cssEmitted = true;
+        }
+
+        $commentNotice = isset($options->commentNotice) ? $options->commentNotice : '请发表评论后查看';
+        $passwordNotice = isset($options->passwordNotice) ? $options->passwordNotice : '请输入密码后查看';
+        $commentErrorHtml = isset($options->commentErrorHtml) ? $options->commentErrorHtml : '<span>请先发表评论后查看</span>';
+        $passwordErrorHtml = isset($options->passwordErrorHtml) ? $options->passwordErrorHtml : '<span>密码错误，请重试</span>';
+
+        if (!self::$jsEmitted) {
+            echo '<script>window.TypechoHideContent = {' .
+                'actionUrl: "' . $actionUrl . '", ' .
+                'cid: ' . intval($archive->cid) . ', ' .
+                'commentNotice: ' . json_encode($commentNotice) . ', ' .
+                'passwordNotice: ' . json_encode($passwordNotice) . ', ' .
+                'commentErrorHtml: ' . json_encode($commentErrorHtml) . ', ' .
+                'passwordErrorHtml: ' . json_encode($passwordErrorHtml) .
+            '};</script>';
+
+            $decryptFile = is_readable($assetDir . 'decrypt.min.js') ? 'decrypt.min.js' : 'decrypt.js';
+            echo '<script src="' . $pluginUrl . '/assets/' . $decryptFile . '"></script>';
+            self::$jsEmitted = true;
+        }
     }
     
     /**

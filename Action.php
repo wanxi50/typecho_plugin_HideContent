@@ -35,6 +35,11 @@ class HideContent_Action extends Typecho_Widget implements Widget_Interface_Do
      */
     public function action()
     {
+        // 根据参数输出CSS或处理解密
+        if ($this->request->isGet() && $this->request->get('css') === '1') {
+            $this->outputCss();
+            return;
+        }
         // 默认调用decrypt方法
         $this->decrypt();
     }
@@ -215,6 +220,52 @@ class HideContent_Action extends Typecho_Widget implements Widget_Interface_Do
             ]);
             exit;
         }
+    }
+
+    /**
+     * 输出样式表：当 customStyle 非空时直接返回该样式，否则返回默认样式文件内容。
+     * 采用外链方式供 header <link> 引用，避免样式注入正文。
+     */
+    private function outputCss()
+    {
+        header('Content-Type: text/css; charset=utf-8');
+        try {
+            $options = Typecho_Widget::widget('Widget_Options')->plugin('HideContent');
+            $custom = isset($options->customStyle) ? trim($options->customStyle) : '';
+            if ($custom !== '') {
+                $etag = 'W/"' . md5($custom) . '"';
+                header('ETag: ' . $etag);
+                $inm = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? trim($_SERVER['HTTP_IF_NONE_MATCH']) : '';
+                if ($inm === $etag) {
+                    header('HTTP/1.1 304 Not Modified');
+                    exit;
+                }
+                echo $custom;
+                exit;
+            }
+            // 默认样式文件
+            $path = dirname(__FILE__) . '/assets/hide-content.min.css';
+            if (!is_readable($path)) {
+                $path = dirname(__FILE__) . '/assets/hide-content.css';
+            }
+            if (is_readable($path)) {
+                $css = @file_get_contents($path);
+                $etag = 'W/"' . md5($css) . '"';
+                header('ETag: ' . $etag);
+                $inm = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? trim($_SERVER['HTTP_IF_NONE_MATCH']) : '';
+                if ($inm === $etag) {
+                    header('HTTP/1.1 304 Not Modified');
+                    exit;
+                }
+                echo $css;
+                exit;
+            }
+        } catch (Exception $e) {
+            // ignore
+        }
+        // 安全兜底：输出空样式
+        echo '';
+        exit;
     }
 
     /**

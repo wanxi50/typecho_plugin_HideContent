@@ -132,15 +132,13 @@ class HideContent_Config
 		);
 		$form->addInput($rateLimitSeconds);
 
-        // 自定义样式设置
-        $defaultCss = HideContent_Plugin::getDefaultStyle();
-        
+        // 自定义样式设置（留空使用默认样式文件；填写则完全替换默认样式）
         $customStyle = new Typecho_Widget_Helper_Form_Element_Textarea(
             'customStyle', 
             NULL, 
-            $defaultCss, 
+            '', 
             _t('自定义样式'),
-            _t('可以自定义隐藏内容的CSS样式，留空则使用默认样式')
+            _t('填写后将替换默认样式；留空则使用内置默认样式文件（外链）')
         );
         $form->addInput($customStyle);
         // 用户选择：不再提供“恢复默认样式”按钮。禁用插件并重新启用即可恢复默认样式。
